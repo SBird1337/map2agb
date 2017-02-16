@@ -25,6 +25,11 @@ namespace map2agb.Library.Event
             MovementArea = reader.ReadByte();
             UnknownTwo = reader.ReadByte();
             Trainer = (reader.ReadByte() == 0) ? false : true;
+            UnknownThree = reader.ReadByte();
+            Sight = reader.ReadUInt16();
+            Script = reader.ReadUInt32();
+            Flag = reader.ReadUInt16();
+            UnknownFour = reader.ReadUInt16();
         }
 
         public byte Identifier { get; set; }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 
 namespace map2agb.Library.Event
 {
@@ -37,7 +32,7 @@ namespace map2agb.Library.Event
                     byte cWarp = br.ReadByte();
                     byte cScript = br.ReadByte();
                     byte cSign = br.ReadByte();
-
+                    
                     br.BaseStream.Seek(0, SeekOrigin.Begin);
                     output = new Event(cPerson, cScript, cWarp, cSign);
                     for (int i = 0; i < cPerson; ++i)

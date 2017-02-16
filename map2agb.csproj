@@ -52,9 +52,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration.cs" />
-    <Compile Include="Library\Map\Event.cs" />
-    <Compile Include="Library\Event\Map.cs" />
-    <Compile Include="Library\Map\Person.cs" />
+    <Compile Include="Library\Event\Event.cs" />
+    <Compile Include="Library\Event\Script.cs" />
+    <Compile Include="Library\Event\Sign.cs" />
+    <Compile Include="Library\Event\Warp.cs" />
+    <Compile Include="Library\Map\Map.cs" />
+    <Compile Include="Library\Event\Person.cs" />
+    <Compile Include="Library\Map\MapConfiguration.cs" />
+    <Compile Include="Library\Tileset\Tileset.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
