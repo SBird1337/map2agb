@@ -6,18 +6,15 @@
     public class Configuration
     {
         /// <summary>
-        /// The *.mcfg file to use for the map data
+        /// The *.map file to use for the map data
         /// </summary>
-        public string MapConfigurationFile { get; set; }
+        public string MapFile { get; set; }
 
         /// <summary>
-        /// The internal name to use for symbolic references
-        /// </summary>
-        public string InternalName { get; set; }
-
-        /// <summary>
-        /// The tileset (*.bvt) file to parse, optional
+        /// The tileset (*.bvd) file to parse
         /// </summary>
         public string TilesetFile { get; set; }
+
+        public string InternalName { get; set; }
     }
 }

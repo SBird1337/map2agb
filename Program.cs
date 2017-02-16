@@ -4,10 +4,7 @@ using System.IO;
 using System;
 using Newtonsoft.Json;
 using map2agb.Library.Map;
-using map2agb.Library.Event;
 using map2agb.Library.Tileset;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace map2agb
 {
@@ -66,35 +63,16 @@ namespace map2agb
                     Error("could not deserialize config file: {0}", ex.Message);
                     return;
                 }
-                Map m = null;
-                Event e = null;
-                Tileset t = null;
-
                 if (config.InternalName == null)
                 {
-                    Error("configuration file needs to have 'InternalName' field");
+                    Error("no internal name specified, set field 'InternalName'");
                     return;
                 }
-                MapConfiguration mapConfig = null;
-                if (config.MapConfigurationFile != null)
+                Map m = null;
+                Tileset t = null;
+                if (config.MapFile != null)
                 {
-                    try
-                    {
-                        mapConfig = JsonConvert.DeserializeObject<MapConfiguration>(File.ReadAllText(config.MapConfigurationFile));
-                    }
-                    catch (Exception ex)
-                    {
-                        Error("could not read map configuration");
-                        return;
-                    }
-                    
-                    m = Map.FromFile(mapConfig.MapFile);
-                    e = Event.FromFile(mapConfig.EventFile);
-                    if (m == null || e == null)
-                    {
-                        Error("'MapFile' or 'EventFile' not specified in your map configuration or failed loading");
-                        return;
-                    }
+                    m = Map.FromFile(config.MapFile);
                 }
 
                 if (config.TilesetFile != null)
@@ -120,20 +98,87 @@ namespace map2agb
                             string mapScriptSymbol = config.InternalName + "_" + "map_scripts";
                             string mapConnectionsSymbol = config.InternalName + "_" + "map_connections";
 
-                            /* write a map header */
+                            /* write the map header */
                             sw.WriteLine(".global " + mapHeaderSymbol);
                             sw.WriteLine(mapHeaderSymbol + ":");
                             sw.WriteLine();
                             sw.WriteLine(".word " + mapFooterSymbol);
                             sw.WriteLine(".word " + mapEventSymbol);
                             sw.WriteLine(".word " + mapScriptSymbol);
-                            sw.WriteLine(".word " + ((mapConfig.Connections == null) ? "0x00000000" : mapConnectionsSymbol));
+                            sw.WriteLine(".word " + ((m.Connections.Length == 0) ? "0x00000000" : mapConnectionsSymbol));
+                            sw.WriteLine();
+                            sw.WriteLine(".align 2");
+                            sw.WriteLine(".global " + mapFooterSymbol);
+                            sw.WriteLine(mapFooterSymbol + ":");
+                            sw.WriteLine();
+
+                            /* write the map footer */
+                            string mapBorderSymbol = config.InternalName + "_" + "map_border";
+                            string mapTileOrderSymbol = config.InternalName + "_" + "map_tile_order";
+                            string firstTilesetName = "tileset_header" + m.FirstTileset.ToString();
+                            string secondTilesetName = "tileset_header" + m.SecondTileset.ToString();
+
+                            sw.WriteLine(".word " + "0x" + m.Width.ToString("X8"));
+                            sw.WriteLine(".word " + "0x" + m.Heigth.ToString("X8"));
+                            sw.WriteLine(".word " + mapBorderSymbol);
+                            sw.WriteLine(".word " + mapTileOrderSymbol);
+                            sw.WriteLine(".word " + firstTilesetName);
+                            sw.WriteLine(".word " + secondTilesetName);
+                            sw.WriteLine(".byte " + "0x" + m.BorderWidth);
+                            sw.WriteLine(".byte " + "0x" +m.BorderHeight);
+                            sw.WriteLine();
+                            sw.WriteLine(".align 2");
+                            sw.WriteLine(".global " + mapBorderSymbol);
+                            sw.WriteLine(mapBorderSymbol + ": ");
+
+                            /* write the map border */
+                            sw.Write(".hword ");
+                            for (int y = 0; y < m.BorderEntries.Length; ++y)
+                            {
+                                for (int x = 0; x < m.BorderEntries[y].Length; x++)
+                                {
+                                    sw.Write("0x" + m.BorderEntries[y][x].ToString("X4"));
+                                    if ((y == m.BorderEntries.Length - 1) && (x == m.BorderEntries[y].Length - 1))
+                                    {
+                                        sw.WriteLine();
+                                    }
+                                    else
+                                    {
+                                        sw.Write(", ");
+                                    }
+                                }
+                            }
+
+                            /* write the actual map */
+                            sw.WriteLine();
+                            sw.WriteLine(".align 2");
+                            sw.WriteLine(".global " + mapTileOrderSymbol);
+                            sw.WriteLine(mapTileOrderSymbol + ":");
+                            sw.WriteLine();
+
+                            for (int y = 0; y < m.Entries.Length; ++y)
+                            {
+                                sw.Write(".hword ");
+                                for (int x = 0; x < m.Entries[y].Length; x++)
+                                {
+                                    sw.Write("0x" + m.Entries[y][x].ToString("X4"));
+                                    if (x == m.Entries[y].Length - 1)
+                                    {
+                                        sw.WriteLine();
+                                    }
+                                    else
+                                    {
+                                        sw.Write(", ");
+                                    }
+                                }
+                            }
+                            sw.WriteLine();
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Error("could not open output file for writing");
+                    Error("could not open output file for writing: {0}", ex.Message);
                 }
                 finally
                 {
