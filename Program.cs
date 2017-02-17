@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using map2agb.Library.Map;
 using map2agb.Library.Tileset;
 using System.Linq;
+using map2agb.Library;
 
 namespace map2agb
 {
@@ -127,7 +128,7 @@ namespace map2agb
                             sw.WriteLine(".word " + firstTilesetName);
                             sw.WriteLine(".word " + secondTilesetName);
                             sw.WriteLine(".byte " + "0x" + m.BorderWidth.ToString("X2"));
-                            sw.WriteLine(".byte " + "0x" +m.BorderHeight.ToString("X2"));
+                            sw.WriteLine(".byte " + "0x" + m.BorderHeight.ToString("X2"));
                             sw.WriteLine();
                             sw.WriteLine(".align 2");
                             sw.WriteLine(".global " + mapBorderSymbol);
@@ -205,7 +206,7 @@ namespace map2agb
                                 sw.WriteLine(".hword 0x" + m.Scripts[i].X.ToString("X4") + ", 0x" + m.Scripts[i].Y.ToString("X4"));
                                 sw.WriteLine(".byte 0x" + m.Scripts[i].Height.ToString("X2") + ", 0x" + m.Scripts[i].UnknownOne.ToString("X2"));
                                 sw.WriteLine(".hword 0x" + m.Scripts[i].Variable.ToString("X4") + ", 0x" + m.Scripts[i].Value.ToString("X4") + ", 0x" + m.Scripts[i].UnknownTwo.ToString("X4"));
-                                sw.WriteLine(".word " + config.InternalName + "_field_" + i.ToString("D2" + "_script"));
+                                sw.WriteLine(".word " + config.InternalName + "_field_" + i.ToString("D2") + "_script");
                                 sw.WriteLine();
                             }
                             sw.WriteLine();
@@ -224,7 +225,67 @@ namespace map2agb
                                 }
                                 sw.WriteLine();
                             }
-                            /* wrote event data */
+                            sw.WriteLine();
+
+                            /* write script data - care for unaligned words (must be written unaligned to rom)*/
+                            sw.WriteLine(".align 2");
+                            sw.WriteLine(".global " + mapScriptSymbol);
+                            sw.WriteLine(mapScriptSymbol + ":");
+                            sw.WriteLine();
+                            for (int i = 0; i < m.MapScripts.Count; ++i)
+                            {
+                                sw.WriteLine(".byte 0x" + m.MapScripts[i].Type.ToString("X2"));
+                                switch (m.MapScripts[i].Type)
+                                {
+                                    case 1:
+                                    case 3:
+                                    case 5:
+                                    case 6:
+                                    case 7:
+                                        sw.WriteLine(".word " + config.InternalName + "_level_" + i.ToString("D2") + "_script");
+                                        break;
+                                    case 2:
+                                    case 4:
+                                        sw.WriteLine(".word " + config.InternalName + "_level_" + i.ToString("D2") + "_data");
+                                        sw.WriteLine();
+                                        break;
+                                }
+                                sw.WriteLine();
+                            }
+                            sw.WriteLine(".align 2");
+                            for (int i = 0; i < m.MapScripts.Count; ++i)
+                            {
+                                if (m.MapScripts[i].Type == 2 || m.MapScripts[i].Type == 4)
+                                {
+                                    sw.WriteLine(config.InternalName + "_level_" + i.ToString("D2") + "_data:");
+                                    sw.WriteLine(".hword 0x" + m.MapScripts[i].Variable.ToString("X4") + ", 0x" + m.MapScripts[i].Value.ToString("X4"));
+                                    sw.WriteLine(".word " + config.InternalName + "_level_" + i.ToString("D2") + "_script");
+                                    sw.WriteLine();
+                                }
+                            }
+                            sw.WriteLine();
+
+                            /* write map connections */
+                            if (m.Connections.Length > 0)
+                            {
+                                sw.WriteLine(".align 2");
+                                sw.WriteLine(".global " + mapConnectionsSymbol);
+                                sw.WriteLine(mapConnectionsSymbol + ":");
+                                sw.WriteLine();
+
+                                sw.WriteLine(".word 0x" + m.Connections.Length.ToString("X8"));
+                                sw.WriteLine(".word " + config.InternalName + "_connections_internal");
+                                sw.WriteLine();
+                                sw.WriteLine(".align 2");
+                                sw.WriteLine(config.InternalName + "_connections_internal:");
+                                sw.WriteLine();
+                                for (int i = 0; i < m.Connections.Length; ++i)
+                                {
+                                    sw.WriteLine(".word 0x" + m.Connections[i].Direction.ToString("X8") + ", 0x" + m.Connections[i].Offset.ToString("X8"));
+                                    sw.WriteLine(".byte 0x" + m.Connections[i].Bank.ToString("X2") + ", 0x" + m.Connections[i].MapNumber.ToString("X2"));
+                                    sw.WriteLine(".hword 0x" + m.Connections[i].Padding.ToString("X4"));
+                                }
+                            }
                         }
                     }
                 }
