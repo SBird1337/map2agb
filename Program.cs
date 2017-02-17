@@ -5,6 +5,7 @@ using System;
 using Newtonsoft.Json;
 using map2agb.Library.Map;
 using map2agb.Library.Tileset;
+using System.Linq;
 
 namespace map2agb
 {
@@ -106,6 +107,7 @@ namespace map2agb
                             sw.WriteLine(".word " + mapEventSymbol);
                             sw.WriteLine(".word " + mapScriptSymbol);
                             sw.WriteLine(".word " + ((m.Connections.Length == 0) ? "0x00000000" : mapConnectionsSymbol));
+                            sw.WriteLine(".byte " + string.Join(", ", m.MapHeaderData.Select(b => "0x" + b.ToString("X2")).ToArray()));
                             sw.WriteLine();
                             sw.WriteLine(".align 2");
                             sw.WriteLine(".global " + mapFooterSymbol);
@@ -115,8 +117,8 @@ namespace map2agb
                             /* write the map footer */
                             string mapBorderSymbol = config.InternalName + "_" + "map_border";
                             string mapTileOrderSymbol = config.InternalName + "_" + "map_tile_order";
-                            string firstTilesetName = "tileset_header" + m.FirstTileset.ToString();
-                            string secondTilesetName = "tileset_header" + m.SecondTileset.ToString();
+                            string firstTilesetName = "tileset_header_" + m.FirstTileset.ToString();
+                            string secondTilesetName = "tileset_header_" + m.SecondTileset.ToString();
 
                             sw.WriteLine(".word " + "0x" + m.Width.ToString("X8"));
                             sw.WriteLine(".word " + "0x" + m.Heigth.ToString("X8"));
@@ -124,8 +126,8 @@ namespace map2agb
                             sw.WriteLine(".word " + mapTileOrderSymbol);
                             sw.WriteLine(".word " + firstTilesetName);
                             sw.WriteLine(".word " + secondTilesetName);
-                            sw.WriteLine(".byte " + "0x" + m.BorderWidth);
-                            sw.WriteLine(".byte " + "0x" +m.BorderHeight);
+                            sw.WriteLine(".byte " + "0x" + m.BorderWidth.ToString("X2"));
+                            sw.WriteLine(".byte " + "0x" +m.BorderHeight.ToString("X2"));
                             sw.WriteLine();
                             sw.WriteLine(".align 2");
                             sw.WriteLine(".global " + mapBorderSymbol);
@@ -173,6 +175,56 @@ namespace map2agb
                                 }
                             }
                             sw.WriteLine();
+
+                            /* write event data */
+                            sw.WriteLine(".align 2");
+                            sw.WriteLine(".global " + mapEventSymbol);
+                            sw.WriteLine(mapEventSymbol + ":");
+                            sw.WriteLine();
+                            sw.WriteLine(".byte 0x" + m.Persons.Length.ToString("X2") + ", 0x" + m.Warps.Length.ToString("X2") + ", 0x" + m.Scripts.Length.ToString("X2") + ", 0x" + m.Signs.Length.ToString("X2"));
+                            for (int i = 0; i < m.Persons.Length; ++i)
+                            {
+                                sw.WriteLine(".byte 0x" + m.Persons[i].Identifier.ToString("X2") + ", 0x" + m.Persons[i].Image.ToString("X2"));
+                                sw.WriteLine(".hword 0x" + m.Persons[i].UnknownOne.ToString("X4") + ", 0x" + m.Persons[i].X.ToString("X4") + ", 0x" + m.Persons[i].Y.ToString("X4"));
+                                sw.WriteLine(".byte 0x" + m.Persons[i].TalkArea.ToString("X2") + ", 0x" + m.Persons[i].Movement.ToString("X2") + ", 0x" + m.Persons[i].MovementArea.ToString("X2") + ", 0x" + m.Persons[i].UnknownTwo.ToString("X2") + ", 0x" + (m.Persons[i].Trainer ? "01" : "00") + ", 0x" + m.Persons[i].UnknownThree.ToString("X2"));
+                                sw.WriteLine(".hword 0x" + m.Persons[i].Sight.ToString("X4"));
+                                sw.WriteLine(".word " + config.InternalName + "_npc_" + i.ToString("D2") + "_script");
+                                sw.WriteLine(".hword 0x" + m.Persons[i].Flag.ToString("X4") + ", 0x" + m.Persons[i].UnknownFour.ToString("X4"));
+                                sw.WriteLine();
+                            }
+                            sw.WriteLine();
+                            for (int i = 0; i < m.Warps.Length; ++i)
+                            {
+                                sw.WriteLine(".hword 0x" + m.Warps[i].X.ToString("X4") + ", 0x" + m.Warps[i].Y.ToString("X4"));
+                                sw.WriteLine(".byte 0x" + m.Warps[i].Height.ToString("X2") + ", 0x" + m.Warps[i].WarpNumber.ToString("X") + ", 0x" + m.Warps[i].MapNumber.ToString("X2") + ", 0x" + m.Warps[i].MapBank.ToString("X2"));
+                                sw.WriteLine();
+                            }
+                            sw.WriteLine();
+                            for (int i = 0; i < m.Scripts.Length; ++i)
+                            {
+                                sw.WriteLine(".hword 0x" + m.Scripts[i].X.ToString("X4") + ", 0x" + m.Scripts[i].Y.ToString("X4"));
+                                sw.WriteLine(".byte 0x" + m.Scripts[i].Height.ToString("X2") + ", 0x" + m.Scripts[i].UnknownOne.ToString("X2"));
+                                sw.WriteLine(".hword 0x" + m.Scripts[i].Variable.ToString("X4") + ", 0x" + m.Scripts[i].Value.ToString("X4") + ", 0x" + m.Scripts[i].UnknownTwo.ToString("X4"));
+                                sw.WriteLine(".word " + config.InternalName + "_field_" + i.ToString("D2" + "_script"));
+                                sw.WriteLine();
+                            }
+                            sw.WriteLine();
+                            for (int i = 0; i < m.Signs.Length; ++i)
+                            {
+                                sw.WriteLine(".hword 0x" + m.Signs[i].X.ToString("X4") + ", 0x" + m.Signs[i].Y.ToString("X4"));
+                                sw.WriteLine(".byte 0x" + m.Signs[i].Height.ToString("X2") + ", 0x" + m.Signs[i].Type.ToString("X2"));
+                                sw.WriteLine(".hword 0x" + m.Signs[i].Unknown.ToString("X4"));
+                                if (m.Signs[i].Type < 5)
+                                {
+                                    sw.WriteLine(".word " + config.InternalName + "_sign_" + i.ToString("D2") + "_script");
+                                }
+                                else
+                                {
+                                    sw.WriteLine(".word " + m.Signs[i].Script.ToString("X8"));
+                                }
+                                sw.WriteLine();
+                            }
+                            /* wrote event data */
                         }
                     }
                 }
